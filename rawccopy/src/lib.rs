@@ -9,7 +9,11 @@ use std::{
 const RCC_VERSION: &str = "0.1.7";
 
 pub fn exe(args: Vec<&str>) {
-    println!("RawCCopy v{RCC_VERSION}\n");
+    let quiet_mode = args.iter().any(|arg| arg == &"/Quiet");
+
+    if !quiet_mode {
+        println!("RawCCopy v{RCC_VERSION}\n");
+    }
 
     // We use `std::time::Instant` for a robust, monotonic clock.
     // This is safer and more idiomatic than calling GetTickCount via FFI.
@@ -58,10 +62,12 @@ pub fn exe(args: Vec<&str>) {
     // We must cast the specific pointer to the generic `*mut c_void` that CleanUp expects.
     unsafe { rawccopy_sys::CleanUp(context as *mut c_void) };
 
-    // C equivalent: uint64_t duration = ElapsedTime(start);
-    //              printf("Job took %.2f seconds.\n", ((double)duration)/1000.0);
-    // The `elapsed()` method on `Instant` handles the duration calculation safely,
-    // avoiding the wraparound issues present in the C implementation.
-    let duration_secs = start_time.elapsed().as_secs_f64();
-    println!("Job took {duration_secs:.2} seconds.");
+    if !quiet_mode {
+        // C equivalent: uint64_t duration = ElapsedTime(start);
+        //              printf("Job took %.2f seconds.\n", ((double)duration)/1000.0);
+        // The `elapsed()` method on `Instant` handles the duration calculation safely,
+        // avoiding the wraparound issues present in the C implementation.
+        let duration_secs = start_time.elapsed().as_secs_f64();
+        println!("Job took {duration_secs:.2} seconds.");
+    }
 }
