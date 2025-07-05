@@ -1,0 +1,10 @@
+[workspace]
+members = ["rawccopy", "rawccopy-sys"]
+resolver = "3"
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+strip = true
+lto = "thin"

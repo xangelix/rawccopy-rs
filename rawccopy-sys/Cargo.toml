@@ -1,0 +1,8 @@
+[package]
+name = "rawccopy-sys"
+version = "1.0.0"
+edition = "2024"
+
+[build-dependencies]
+bindgen = "0.72"
+cc = "1"
