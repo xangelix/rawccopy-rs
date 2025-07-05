@@ -1,0 +1,3 @@
+[submodule "rawccopy-sys/rawccopy"]
+	path = rawccopy-sys/rawccopy
+	url = https://github.com/xangelix/rawccopy.git
