@@ -86,8 +86,9 @@ impl RawFileReader {
             .iter()
             .map(|&s| CString::new(s).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e)))
             .collect();
+        let c_args = c_args?;
         let mut p_args: Vec<*mut c_char> =
-            c_args?.iter().map(|s| s.as_ptr() as *mut c_char).collect();
+            c_args.iter().map(|s| s.as_ptr() as *mut c_char).collect();
 
         // The `rawccopy_open` function is not const-correct, so we cast.
         let stream =
