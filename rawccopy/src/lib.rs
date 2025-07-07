@@ -1,7 +1,8 @@
 use std::{
     ffi::CString,
+    io,
     os::raw::{c_char, c_int, c_void},
-    process,
+    process, ptr,
     str::FromStr,
     time::Instant,
 };
@@ -69,5 +70,65 @@ pub fn exe(args: Vec<&str>) {
         // avoiding the wraparound issues present in the C implementation.
         let duration_secs = start_time.elapsed().as_secs_f64();
         println!("Job took {duration_secs:.2} seconds.");
+    }
+}
+
+pub struct RawFileReader {
+    stream: *mut rawccopy_sys::rawccopy_stream,
+}
+
+impl RawFileReader {
+    /// Creates a new reader for a file on an NTFS volume.
+    /// `args` should be the command-line arguments for rawccopy.
+    pub fn new(args: &[&str]) -> io::Result<Self> {
+        // Convert Rust string slices to a C-style argv
+        let c_args: io::Result<Vec<CString>> = args
+            .iter()
+            .map(|&s| CString::new(s).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e)))
+            .collect();
+        let mut p_args: Vec<*mut c_char> =
+            c_args?.iter().map(|s| s.as_ptr() as *mut c_char).collect();
+
+        // The `rawccopy_open` function is not const-correct, so we cast.
+        let stream =
+            unsafe { rawccopy_sys::rawccopy_open(p_args.len() as i32, p_args.as_mut_ptr()) };
+
+        if stream.is_null() {
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Failed to open raw file stream.",
+            ))
+        } else {
+            Ok(RawFileReader { stream })
+        }
+    }
+}
+
+impl io::Read for RawFileReader {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if self.stream.is_null() {
+            return Err(io::Error::new(
+                io::ErrorKind::BrokenPipe,
+                "Stream is closed or invalid.",
+            ));
+        }
+
+        let bytes_read =
+            unsafe { rawccopy_sys::rawccopy_read(self.stream, buf.as_mut_ptr(), buf.len() as u64) };
+
+        if bytes_read < 0 {
+            Err(io::Error::new(io::ErrorKind::Other, "Raw copy read error."))
+        } else {
+            Ok(bytes_read as usize)
+        }
+    }
+}
+
+impl Drop for RawFileReader {
+    fn drop(&mut self) {
+        if !self.stream.is_null() {
+            unsafe { rawccopy_sys::rawccopy_close(self.stream) };
+            self.stream = ptr::null_mut();
+        }
     }
 }

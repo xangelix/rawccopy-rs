@@ -22,6 +22,7 @@ fn main() {
             "rawccopy/rawccopy/regex.c",
             "rawccopy/rawccopy/safe-string.c",
             "rawccopy/rawccopy/settings.c",
+            "rawccopy/rawccopy/rawccopy_api.c",
         ])
         .include("rawccopy/rawccopy")
         .compile("rawccopy");
@@ -30,11 +31,16 @@ fn main() {
     let bindings = bindgen::Builder::default()
         // The header files
         .header("rawccopy/rawccopy/context.h")
+        .header("rawccopy/rawccopy/rawccopy_api.h")
         .header("rawccopy/rawccopy/processor.h")
         // Tell bindgen to only generate bindings for used functions
         .allowlist_function("SetupContext")
         .allowlist_function("CleanUp")
         .allowlist_function("PerformOperation")
+        .allowlist_function("rawccopy_open")
+        .allowlist_function("rawccopy_read")
+        .allowlist_function("rawccopy_close")
+        .allowlist_function("rawccopy_stream")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Unable to generate bindings");
